@@ -13,7 +13,7 @@ library(car)
 GR_early <- read_csv("data/Experiment01_EarlyGrowth_Mimulus.csv")
 GR_late <- read_csv("data/Experiment01_LateGrowth_Mimulus.csv")
 
-PS2_early <- read_csv("data/Experiment01_EarlyPS2_Mimulus.csv") %>% filter(TOE<101)
+PS2_early <- read_csv("data/Experiment01_EarlyPS2_Mimulus.csv") %>% filter(TOE>100)
 PS2_late <- read_csv("data/Experiment01_LatePS2_Mimulus.csv")
 decode <- read_csv("data/decode.csv")
 
@@ -174,47 +174,40 @@ ggsave("graphs/Site_year_gr_late_means.pdf",width=12, height = 6, units = "in")
 ###################################################################################
 #PS2 plots
 
-library(ggplot2)
-
-ggplot(PS2_early3, aes(x = TOE, y = Fv.Fm, color = factor(Year), linetype = Site)) +
+#Fv/Fm
+ggplot(PS2_early3, aes(x = TOE, y = Fv.Fm, color = factor(Year))) +
   geom_line(size = 1) +
   scale_color_manual(values = c("2010" = "skyblue3", "2014" = "#FF7700"),
                      name = "Year") +
-  scale_linetype_manual(values = c("SCalifornia" = "solid", "Oregon" = "dashed"),
-                        name = "Site") +
-  facet_wrap(~ Treatment, ncol = 1) +
-  labs(x = "TOE", y = "Fv/Fm") +
-  theme_classic() + theme(
-    axis.text.x = element_text(size=20, face="bold", hjust = 0.4),
-    axis.text.y = element_text(size=20,face="bold"),
-    axis.title.x = element_text(color="black", size=24, vjust = 0.5, face="bold"),
-    axis.title.y = element_text(color="black", size=24,vjust = 1.7, face="bold",hjust=0.5),
-    legend.title = element_blank(),
-    legend.text = element_text(size = 16,face="bold"),  # Increase the size of the legend text
-    legend.key.size = unit(2, "lines"),  # Increase the size of the legend dots
-    legend.key.height = unit(1.6, "lines"), #Reduce height
-    strip.text = element_text(size = 14, face = "bold") #Make strip text larger
-  )+
-  guides(color = guide_legend(reverse = TRUE, override.aes = list(linetype = 0)),
-         fill  = guide_legend(reverse = TRUE))
-
-
-
-ggplot(PS2_early3, aes(x = TOE, y = Fv.Fm, color = factor(Year), linetype = Site)) +
-  geom_line(size = 1) +
-  #geom_point(size = 2) +
-  scale_color_manual(values = c("2010" = "skyblue3", "2014" = "#FF7700"),
-                     name = "Year") +
-  scale_linetype_manual(values = c("SCalifornia" = "solid", "Oregon" = "dashed"),
-                        name = "Site") +
-  facet_wrap(~ Treatment) +
-  labs(x = "TOE", y = "Fv/Fm") +
+  facet_grid(Treatment ~ Site) +
+  labs(x = "Time (h)", y = "Fv/Fm") +
   theme_bw() +
-  theme(
-    strip.text = element_text(size = 14, face = "bold")
-  )
+  theme(strip.text = element_text(size = 14, face = "bold"),
+        axis.text.x = element_text(size=12,hjust = 0.4),
+        axis.text.y = element_text(size=12),
+        axis.title.x = element_text(color="black", size=20, vjust = 0.5, face="bold"),
+        axis.title.y = element_text(color="black", size=20,vjust = 1.7, face="bold",hjust=0.5),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 14,face="bold"))  # Increase the size of the legend text)
 
+ggsave("graphs/FvFm_early.pdf",width=6, height = 8, units = "in")
 
+ggplot(PS2_late3, aes(x = TOE, y = Fv.Fm, color = factor(Year))) +
+  geom_line(size = 1) +
+  scale_color_manual(values = c("2010" = "skyblue3", "2014" = "#FF7700"),
+                     name = "Year") +
+  facet_grid(Treatment ~ Site) +
+  labs(x = "Time (h)", y = "Fv/Fm") +
+  theme_bw() +
+  theme(strip.text = element_text(size = 14, face = "bold"),
+        axis.text.x = element_text(size=12,hjust = 0.4),
+        axis.text.y = element_text(size=12),
+        axis.title.x = element_text(color="black", size=20, vjust = 0.5, face="bold"),
+        axis.title.y = element_text(color="black", size=20,vjust = 1.7, face="bold",hjust=0.5),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 14,face="bold"))  # Increase the size of the legend text)
+
+ggsave("graphs/FvFm_late.pdf",width=8, height = 11, units = "in")
 
 
 
