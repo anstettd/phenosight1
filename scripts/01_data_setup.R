@@ -9,6 +9,9 @@
 #Import libraries
 library(tidyverse)
 library(car)
+library(lme4)
+library(lmerTest)
+library(lmtest)
 
 GR_early <- read_csv("data/Experiment01_EarlyGrowth_Mimulus.csv")
 GR_late <- read_csv("data/Experiment01_LateGrowth_Mimulus.csv")
@@ -51,7 +54,7 @@ PS2_late3 <- PS2_late2 %>%
 
 ###################################################################################
 ###################################################################################
-#Run Models
+#Run Models for Growth Rate
 gr_early <- lm(GR ~ Site*Year+Treatment,data=GR_early3)
 summary(gr_early)
 Anova(gr_early,type=3)
@@ -59,17 +62,6 @@ Anova(gr_early,type=3)
 gr_late <- lm(GR ~ Site*Year+Treatment,data=GR_late3)
 summary(gr_late)
 Anova(gr_late,type=3)
-
-Fv.Fm_early <- lm(Fv.Fm ~ Site*Year+Treatment+TOE,data=PS2_early3) 
-summary(Fv.Fm_early)
-Anova(Fv.Fm_early)
-
-Fv.Fm_late <- lm(Fv.Fm ~ Site*Year+Treatment+TOE,data=PS2_late3) 
-summary(Fv.Fm_late)
-Anova(Fv.Fm_late)
-
-
-
 
 ########## Make Plot ############
 
@@ -171,7 +163,72 @@ ggplot(GR_late3, aes(x = Treatment, y = GR, fill = factor(Year))) +
          fill  = guide_legend(reverse = TRUE))
 
 ggsave("graphs/Site_year_gr_late_means.pdf",width=12, height = 6, units = "in")
+
+
+
+
+
 ###################################################################################
+###################################################################################
+
+# Run PS2 mixed effect models
+#Fv.Fm
+
+Fv.Fm_3way <- lmer(Fv.Fm ~ Site*Year*Treatment+TOE+(1|Population),data=PS2_early3) 
+Fv.Fm_early <- lmer(Fv.Fm ~ Site*Year+Treatment+TOE+(1|Population),data=PS2_early3) 
+lrtest(Fv.Fm_3way,Fv.Fm_early) #drop interaciton
+
+Fv.Fm_early <- lmer(Fv.Fm ~ Site*Year+Treatment+TOE+(1|Population),data=PS2_early3) 
+Fv.Fm_early_no <- lmer(Fv.Fm ~ Site+Year+Treatment+TOE+(1|Population),data=PS2_early3) 
+lrtest(Fv.Fm_early, Fv.Fm_early_no) #drop interaciton
+
+Fv.Fm_early_no_year <- lmer(Fv.Fm ~ Site+Treatment+TOE+(1|Population),data=PS2_early3) 
+lrtest(Fv.Fm_early_no,Fv.Fm_early_no_year) #drop year
+
+Fv.Fm_early_Treatment <- lmer(Fv.Fm ~ Treatment+TOE+(1|Population),data=PS2_early3) 
+lrtest(Fv.Fm_early_no_year,Fv.Fm_early_Treatment) #drop site
+
+Fv.Fm_early_Time <- lmer(Fv.Fm ~ TOE+(1|Population),data=PS2_early3) 
+lrtest(Fv.Fm_early_Treatment,Fv.Fm_early_Time) #Keep Treatment only model.
+
+# Run PS2 mixed effect models
+Fv.Fm_late <- lmer(Fv.Fm ~ Site*Year+Treatment+TOE+(1|Population),data=PS2_late3) 
+Fv.Fm_late_no <- lmer(Fv.Fm ~ Site+Year+Treatment+TOE+(1|Population),data=PS2_late3) 
+lrtest(Fv.Fm_late, Fv.Fm_late_no) #drop interaciton
+
+Fv.Fm_late_no_year <- lmer(Fv.Fm ~ Site+Treatment+TOE+(1|Population),data=PS2_late3) 
+lrtest(Fv.Fm_late_no,Fv.Fm_late_no_year) #drop year
+
+Fv.Fm_late_Treatment <- lmer(Fv.Fm ~ Treatment+TOE+(1|Population),data=PS2_late3) 
+lrtest(Fv.Fm_late_no_year,Fv.Fm_late_Treatment) #drop site
+
+Fv.Fm_late_Time <- lmer(Fv.Fm ~ TOE+(1|Population),data=PS2_late3) 
+lrtest(Fv.Fm_late_Treatment,Fv.Fm_late_Time) #Keep Treatment only model.
+
+
+
+
+
+############
+#Fq.Fm
+Fq.Fm_early <- lmer(Fq.Fm ~ Site*Year+Treatment+TOE+(1|Population),data=PS2_early3) 
+Fq.Fm_early_no <- lmer(Fq.Fm ~ Site+Year+Treatment+TOE+(1|Population),data=PS2_early3) 
+lrtest(Fq.Fm_early, Fq.Fm_early_no) #drop interaciton
+
+Fq.Fm_early_no_year <- lmer(Fq.Fm ~ Site+Treatment+TOE+(1|Population),data=PS2_early3) 
+lrtest(Fq.Fm_early_no,Fq.Fm_early_no_year) #drop year
+
+Fq.Fm_early_Treatment <- lmer(Fq.Fm ~ Treatment+TOE+(1|Population),data=PS2_early3) 
+lrtest(Fq.Fm_early_no_year,Fq.Fm_early_Treatment) #drop site
+
+Fq.Fm_early_Time <- lmer(Fq.Fm ~ TOE+(1|Population),data=PS2_early3) 
+lrtest(Fq.Fm_early_Treatment,Fq.Fm_early_Time) #Keep Treatment only model.
+
+
+
+
+
+
 #PS2 plots
 
 #Fv/Fm
