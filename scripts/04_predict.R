@@ -8,6 +8,7 @@
 ###################################################################################
 #Import libraries
 library(tidyverse)
+library(randomForest)
 
 #Import Data
 PS2_all <- read_csv("data/PS2_all.csv")
@@ -87,6 +88,23 @@ summary(glm_oregon)
 ###############################################################################
 ## Random forest variable importance — MeanDecreaseAccuracy, separate by Site
 ###############################################################################
+
+df_cali   <- PS2_all %>% filter(Site == "SCalifornia")
+df_oregon <- PS2_all %>% filter(Site == "Oregon")  # confirm exact label first
+set.seed(123)
+
+rf_cali <- randomForest(
+  Year ~ Fv.Fm + Fq.Fm + NPQ + npq.t + ChlIdx,
+  data = df_cali,
+  importance = TRUE
+)
+
+rf_oregon <- randomForest(
+  Year ~ Fv.Fm + Fq.Fm + NPQ + npq.t + ChlIdx,
+  data = df_oregon,
+  importance = TRUE
+)
+
 
 #Extract importance values into tidy data frames
 imp_cali <- as.data.frame(importance(rf_cali)) %>%
@@ -249,3 +267,212 @@ p_ari <- PS2_all %>%
   )
 p_ari
 ggsave("graphs/multi_join/xy/fvfm_ariidx_siteyear.pdf", plot = p_ari, width = 10, height = 8, units = "in")
+
+
+###############################################################################################################
+###############################################################################################################
+
+###############################################################################
+## XY Graphs lagged for early and late
+###############################################################################
+
+###############################################################################
+## STEP 1 — Split by Timepoint
+###############################################################################
+PS2_early <- PS2_all %>% filter(Timepoint == "Early")
+PS2_late  <- PS2_all %>% filter(Timepoint == "Late")
+
+###############################################################################
+## STEP 2 — Define the lagging function
+###############################################################################
+add_lags <- function(df) {
+  df %>%
+    arrange(Population, Treatment, Year, TOE) %>%
+    group_by(Population, Treatment, Year) %>%
+    mutate(
+      ChlIdx_lag1 = lag(ChlIdx, n = 1, order_by = TOE),
+      AriIdx_lag1 = lag(AriIdx, n = 1, order_by = TOE)
+    ) %>%
+    ungroup()
+}
+
+###############################################################################
+## STEP 3 — Apply lagging to each phase
+###############################################################################
+#PS2_early_lagged <- add_lags(PS2_early)
+#Too much noise in early. Remove first few time points:
+PS2_early <- PS2_all %>%
+  filter(Timepoint == "Early") %>%
+  group_by(Population, Treatment, Year) %>%
+  filter(TOE > sort(unique(TOE))[6]) %>%
+  ungroup()
+PS2_late_lagged  <- add_lags(PS2_late)
+
+###############################################################################
+## STEP 4 — Regressions
+###############################################################################
+lm_chl_early <- lm(Fv.Fm ~ ChlIdx_lag1, data = PS2_early_lagged)
+summary(lm_chl_early)
+
+lm_ari_early <- lm(Fv.Fm ~ AriIdx_lag1, data = PS2_early_lagged)
+summary(lm_ari_early)
+
+lm_chl_late <- lm(Fv.Fm ~ ChlIdx_lag1, data = PS2_late_lagged)
+summary(lm_chl_late)
+
+lm_ari_late <- lm(Fv.Fm ~ AriIdx_lag1, data = PS2_late_lagged)
+summary(lm_ari_late)
+
+###############################################################################
+## STEP 5 — Plots (colored by TOE, ascending)
+###############################################################################
+
+my_theme <- theme_classic() + theme(
+  axis.text.x = element_text(size = 20, face = "bold", hjust = 0.4),
+  axis.text.y = element_text(size = 20, face = "bold"),
+  axis.title.x = element_text(color = "black", size = 24, vjust = 0.5, face = "bold"),
+  axis.title.y = element_text(color = "black", size = 24, vjust = 1.7, face = "bold", hjust = 0.5),
+  legend.title = element_text(size = 18, face = "bold"),
+  legend.text = element_text(size = 14, face = "bold"),
+  legend.key.size = unit(1.5, "lines"),
+  strip.text = element_blank(),
+  strip.background = element_blank()
+)
+
+#--- Early: Fv.Fm ~ ChlIdx_lag1 ---
+p_chl_early <- PS2_early_lagged %>%
+  filter(!is.na(ChlIdx_lag1)) %>%
+  arrange(TOE) %>%
+  ggplot(aes(x = ChlIdx_lag1, y = Fv.Fm, color = TOE)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "black") +
+  scale_color_viridis_c() +
+  labs(x = "Chlorophyll Index lag1", y = "Fv/Fm", color = "TOE") +
+  my_theme
+p_chl_early
+ggsave("graphs/multi_join/xy/fvfm_chlidx_lag1_early.pdf", plot = p_chl_early, width = 8, height = 6, units = "in")
+
+#--- Early: Fv.Fm ~ AriIdx_lag1 ---
+p_ari_early <- PS2_early_lagged %>%
+  filter(!is.na(AriIdx_lag1)) %>%
+  arrange(TOE) %>%
+  ggplot(aes(x = AriIdx_lag1, y = Fv.Fm, color = TOE)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "black") +
+  scale_color_viridis_c() +
+  labs(x = "Anthocyanin Index lag1", y = "Fv/Fm", color = "TOE") +
+  my_theme
+p_ari_early
+ggsave("graphs/multi_join/xy/fvfm_ariidx_lag1_early.pdf", plot = p_ari_early, width = 8, height = 6, units = "in")
+
+#--- Late: Fv.Fm ~ ChlIdx_lag1 ---
+p_chl_late <- PS2_late_lagged %>%
+  filter(!is.na(ChlIdx_lag1)) %>%
+  arrange(TOE) %>%
+  ggplot(aes(x = ChlIdx_lag1, y = Fv.Fm, color = TOE)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "black") +
+  scale_color_viridis_c() +
+  labs(x = "Chlorophyll Index lag1", y = "Fv/Fm", color = "TOE") +
+  my_theme
+p_chl_late
+ggsave("graphs/multi_join/xy/fvfm_chlidx_lag1_late.pdf", plot = p_chl_late, width = 8, height = 6, units = "in")
+
+#--- Late: Fv.Fm ~ AriIdx_lag1 ---
+p_ari_late <- PS2_late_lagged %>%
+  filter(!is.na(AriIdx_lag1)) %>%
+  arrange(TOE) %>%
+  ggplot(aes(x = AriIdx_lag1, y = Fv.Fm, color = TOE)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "black") +
+  scale_color_viridis_c() +
+  labs(x = "Anthocyanin Index lag1", y = "Fv/Fm", color = "TOE") +
+  my_theme
+p_ari_late
+ggsave("graphs/multi_join/xy/fvfm_ariidx_lag1_late.pdf", plot = p_ari_late, width = 8, height = 6, units = "in")
+
+
+###############################################################################
+## STEP 6 — XY Graphs faceted by Site x Year (lagged, Early vs Late)
+###############################################################################
+library(car)  # for Anova(type=3)
+
+#--- Early: Fv.Fm ~ ChlIdx_lag1 + Site*Year ---
+lm_chl_early_sy <- lm(Fv.Fm ~ ChlIdx_lag1 + Site*Year, data = PS2_early_lagged)
+Anova(lm_chl_early_sy, type = 3)
+
+lm_ari_early_sy <- lm(Fv.Fm ~ AriIdx_lag1 + Site*Year, data = PS2_early_lagged)
+Anova(lm_ari_early_sy, type = 3)
+
+#--- Late: Fv.Fm ~ ChlIdx_lag1 + Site*Year ---
+lm_chl_late_sy <- lm(Fv.Fm ~ ChlIdx_lag1 + Site*Year, data = PS2_late_lagged)
+Anova(lm_chl_late_sy, type = 3)
+
+lm_ari_late_sy <- lm(Fv.Fm ~ AriIdx_lag1 + Site*Year, data = PS2_late_lagged)
+Anova(lm_ari_late_sy, type = 3)
+
+# Shared faceted theme
+site_year_theme <- theme_classic() + theme(
+  axis.text.x = element_text(size = 20, face = "bold", hjust = 0.4),
+  axis.text.y = element_text(size = 20, face = "bold"),
+  axis.title.x = element_text(color = "black", size = 24, vjust = 0.5, face = "bold"),
+  axis.title.y = element_text(color = "black", size = 24, vjust = 1.7, face = "bold", hjust = 0.5),
+  legend.title = element_blank(),
+  legend.text = element_text(size = 16, face = "bold"),
+  legend.key.size = unit(2, "lines"),
+  legend.key.height = unit(1.6, "lines"),
+  strip.text = element_text(size = 14, face = "bold"),
+  strip.background = element_blank()
+)
+
+#--- Early: Fv.Fm ~ ChlIdx_lag1, faceted by Site x Year ---
+p_chl_early_sy <- PS2_early_lagged %>%
+  filter(!is.na(ChlIdx_lag1)) %>%
+  ggplot(aes(x = ChlIdx_lag1, y = Fv.Fm, fill = factor(Year))) +
+  geom_point(shape = 21, color = "black", size = 2) +
+  geom_smooth(method = "lm", color = "black") +
+  scale_fill_manual(values = c("2010" = "skyblue3", "2014" = "#FF7700"), name = "Year") +
+  facet_grid(Year ~ Site) +
+  labs(x = "Chlorophyll Index (prior timepoint)", y = "Fv/Fm") +
+  site_year_theme
+p_chl_early_sy
+ggsave("graphs/multi_join/xy/fvfm_chlidx_lag1_siteyear_early.pdf", plot = p_chl_early_sy, width = 10, height = 8, units = "in")
+
+#--- Early: Fv.Fm ~ AriIdx_lag1, faceted by Site x Year ---
+p_ari_early_sy <- PS2_early_lagged %>%
+  filter(!is.na(AriIdx_lag1)) %>%
+  ggplot(aes(x = AriIdx_lag1, y = Fv.Fm, fill = factor(Year))) +
+  geom_point(shape = 21, color = "black", size = 2) +
+  geom_smooth(method = "lm", color = "black") +
+  scale_fill_manual(values = c("2010" = "skyblue3", "2014" = "#FF7700"), name = "Year") +
+  facet_grid(Year ~ Site) +
+  labs(x = "Anthocyanin Index (prior timepoint)", y = "Fv/Fm") +
+  site_year_theme
+p_ari_early_sy
+ggsave("graphs/multi_join/xy/fvfm_ariidx_lag1_siteyear_early.pdf", plot = p_ari_early_sy, width = 10, height = 8, units = "in")
+
+#--- Late: Fv.Fm ~ ChlIdx_lag1, faceted by Site x Year ---
+p_chl_late_sy <- PS2_late_lagged %>%
+  filter(!is.na(ChlIdx_lag1)) %>%
+  ggplot(aes(x = ChlIdx_lag1, y = Fv.Fm, fill = factor(Year))) +
+  geom_point(shape = 21, color = "black", size = 2) +
+  geom_smooth(method = "lm", color = "black") +
+  scale_fill_manual(values = c("2010" = "skyblue3", "2014" = "#FF7700"), name = "Year") +
+  facet_grid(Year ~ Site) +
+  labs(x = "Chlorophyll Index (prior timepoint)", y = "Fv/Fm") +
+  site_year_theme
+p_chl_late_sy
+ggsave("graphs/multi_join/xy/fvfm_chlidx_lag1_siteyear_late.pdf", plot = p_chl_late_sy, width = 10, height = 8, units = "in")
+
+#--- Late: Fv.Fm ~ AriIdx_lag1, faceted by Site x Year ---
+p_ari_late_sy <- PS2_late_lagged %>%
+  filter(!is.na(AriIdx_lag1)) %>%
+  ggplot(aes(x = AriIdx_lag1, y = Fv.Fm, fill = factor(Year))) +
+  geom_point(shape = 21, color = "black", size = 2) +
+  geom_smooth(method = "lm", color = "black") +
+  scale_fill_manual(values = c("2010" = "skyblue3", "2014" = "#FF7700"), name = "Year") +
+  facet_grid(Year ~ Site) +
+  labs(x = "Anthocyanin Index (prior timepoint)", y = "Fv/Fm") +
+  site_year_theme
+p_ari_late_sy
+ggsave("graphs/multi_join/xy/fvfm_ariidx_lag1_siteyear_late.pdf", plot = p_ari_late_sy, width = 10, height = 8, units = "in")

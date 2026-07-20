@@ -1,6 +1,6 @@
 ##################################################################################
 ## Plot out all mutispectral data for phenosight1 
-## 
+## Using one single TOE timeseries
 ## Author Daniel Anstett
 ## 
 ## 
