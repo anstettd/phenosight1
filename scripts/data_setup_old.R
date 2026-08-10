@@ -1,6 +1,6 @@
 ##################################################################################
 ## Organize data for phenosight 1 experiment
-## 
+## Defuct
 ## Author Daniel Anstett
 ## 
 ## 
@@ -10,59 +10,14 @@
 library(tidyverse)
 library(car)
 library(lme4)
-library(lmerTest)
 library(lmtest)
-library(ggh4x)
-
-###################################################################################
-#Functions
-PS2 <- function(name, data) {
-  
-  # Get unique TOE values from the data
-  time_PS2 <- unique(data$TOE)
-  
-  # Initialize results data frame
-  PS2_results <- data.frame()
-  
-  # Loop through each TOE value
-  for(i in 1:length(time_PS2)){
-    toe_select <- time_PS2[i] 
-    PS2_select <- data %>% filter(TOE == toe_select)
-    PS2_early <- lm(name ~ Site*Year+Treatment, data = PS2_select)
-    
-    PS2_results[i,1] <- toe_select
-    PS2_results[i,2] <- Anova(PS2_early, type=3)[["Pr(>F)"]][2]
-    PS2_results[i,3] <- Anova(PS2_early, type=3)[["Pr(>F)"]][3]
-    PS2_results[i,4] <- Anova(PS2_early, type=3)[["Pr(>F)"]][4]
-    PS2_results[i,5] <- Anova(PS2_early, type=3)[["Pr(>F)"]][5]
-    PS2_results[i,6] <- summary(PS2_early)$r.squared 
-  }
-  
-  # Add column names
-  colnames(PS2_results) <- c("TOE", "Site", "Year", "Treatment", "Site*Year", "R2")
-  
-  # Reshape to long format and add Response column
-  PS2_long <- PS2_results %>%
-    pivot_longer(cols = -TOE, 
-                 names_to = "Variable", 
-                 values_to = "Value") %>%
-    mutate(Response = name)
-  
-  return(PS2_long)
-}
-
-# Example usage:
-# PS2_long <- PS2(name = "Fv.Fm", data = PS2_early3)
-
+#library(ggh4x)
 
 ###################################################################################
 #Import Data
 #Growth Rate Data
 GR_early <- read_csv("data/Experiment01_EarlyGrowth_Mimulus.csv")
 GR_late <- read_csv("data/Experiment01_LateGrowth_Mimulus.csv")
-#Multispectral Data
-PS2_early <- read_csv("data/Experiment01_EarlyPS2_Mimulus.csv") %>% filter(TOE>100)
-PS2_late <- read_csv("data/Experiment01_LatePS2_Mimulus.csv")
 
 #Table that gives the pop/year info
 decode <- read_csv("data/decode.csv")
@@ -74,11 +29,6 @@ GR_early2$Treatment <- factor(GR_early2$Treatment, levels = c("20%", "40%", "60%
 GR_late2 <- merge(GR_late, decode, by = "Population")
 GR_late2$Treatment <- factor(GR_late2$Treatment, levels = c("20%", "40%", "60%", "80%", "100%"))
 
-PS2_early2 <- merge(PS2_early, decode, by = "Population")
-PS2_early2$Treatment <- factor(PS2_early2$Treatment, levels = c("20%", "40%", "60%", "80%", "100%"))
-
-PS2_late2 <- merge(PS2_late, decode, by = "Population")
-PS2_late2$Treatment <- factor(PS2_late2$Treatment, levels = c("20%", "40%", "60%", "80%", "100%"))
 
 #Make a data frame that has line(pop) means
 GR_early3 <- GR_early2 %>%
@@ -88,15 +38,6 @@ GR_early3 <- GR_early2 %>%
 GR_late3 <- GR_late2 %>%
   group_by(Population, Treatment) %>%
   summarise(GR = mean(GR, na.rm = TRUE),Site = first(Site), Year = first(Year), .groups = 'drop')
-
-PS2_early3 <- PS2_early2 %>%
-  group_by(Population, Treatment, TOE) %>%
-  summarise(across(Fv.Fm:NDVI, ~mean(.x, na.rm = TRUE)), Site = first(Site), Year = first(Year),.groups = 'drop')
-
-PS2_late3 <- PS2_late2 %>%
-  group_by(Population, Treatment, TOE) %>%
-  summarise(across(Fv.Fm:NDVI, ~mean(.x, na.rm = TRUE)), Site = first(Site), Year = first(Year),.groups = 'drop')
-
 
 
 ###################################################################################
@@ -248,6 +189,48 @@ ggplot(GR_late2, aes(x = Treatment, y = GR, fill = factor(Year))) +
 ggsave("graphs/Site_year_gr_late_all.pdf",width=12, height = 6, units = "in")
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Detritus code
+
+#Multispectral Data
+PS2_early <- read_csv("data/Experiment01_EarlyPS2_Mimulus.csv") %>% filter(TOE>100)
+PS2_late <- read_csv("data/Experiment01_LatePS2_Mimulus.csv")
+
+
+PS2_early2 <- merge(PS2_early, decode, by = "Population")
+PS2_early2$Treatment <- factor(PS2_early2$Treatment, levels = c("20%", "40%", "60%", "80%", "100%"))
+
+PS2_late2 <- merge(PS2_late, decode, by = "Population")
+PS2_late2$Treatment <- factor(PS2_late2$Treatment, levels = c("20%", "40%", "60%", "80%", "100%"))
+
+
+
+PS2_early3 <- PS2_early2 %>%
+  group_by(Population, Treatment, TOE) %>%
+  summarise(across(Fv.Fm:NDVI, ~mean(.x, na.rm = TRUE)), Site = first(Site), Year = first(Year),.groups = 'drop')
+
+PS2_late3 <- PS2_late2 %>%
+  group_by(Population, Treatment, TOE) %>%
+  summarise(across(Fv.Fm:NDVI, ~mean(.x, na.rm = TRUE)), Site = first(Site), Year = first(Year),.groups = 'drop')
+
+
+
+
 ###################################################################################
 
 #Single time point
@@ -291,20 +274,45 @@ PS2_long <- PS2_results %>%
 #################################################################################################
 
 
+###################################################################################
+#Functions
+PS2 <- function(name, data) {
+  
+  # Get unique TOE values from the data
+  time_PS2 <- unique(data$TOE)
+  
+  # Initialize results data frame
+  PS2_results <- data.frame()
+  
+  # Loop through each TOE value
+  for(i in 1:length(time_PS2)){
+    toe_select <- time_PS2[i] 
+    PS2_select <- data %>% filter(TOE == toe_select)
+    PS2_early <- lm(name ~ Site*Year+Treatment, data = PS2_select)
+    
+    PS2_results[i,1] <- toe_select
+    PS2_results[i,2] <- Anova(PS2_early, type=3)[["Pr(>F)"]][2]
+    PS2_results[i,3] <- Anova(PS2_early, type=3)[["Pr(>F)"]][3]
+    PS2_results[i,4] <- Anova(PS2_early, type=3)[["Pr(>F)"]][4]
+    PS2_results[i,5] <- Anova(PS2_early, type=3)[["Pr(>F)"]][5]
+    PS2_results[i,6] <- summary(PS2_early)$r.squared 
+  }
+  
+  # Add column names
+  colnames(PS2_results) <- c("TOE", "Site", "Year", "Treatment", "Site*Year", "R2")
+  
+  # Reshape to long format and add Response column
+  PS2_long <- PS2_results %>%
+    pivot_longer(cols = -TOE, 
+                 names_to = "Variable", 
+                 values_to = "Value") %>%
+    mutate(Response = name)
+  
+  return(PS2_long)
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-#Detritus code
+# Example usage:
+# PS2_long <- PS2(name = "Fv.Fm", data = PS2_early3)
 
 ###################################### Multi-Spectral Data  ##########################################
 ### Single Variable sample analysis ###
