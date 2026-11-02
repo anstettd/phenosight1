@@ -49,7 +49,7 @@ PS2_late3 <- PS2_late3 %>% mutate(Timepoint = "Late")
 PS2_all <- bind_rows(PS2_early3, PS2_late3) %>%
   mutate(Timepoint = factor(Timepoint, levels = c("Early", "Late")))
 
-write_csv(PS2_all, "data/PS2_all.csv")
+#write_csv(PS2_all, "data/PS2_all.csv")
 
 
 
