@@ -113,4 +113,4 @@ Fig1a <- PSA_plot / P_plot / R2_plot +
   plot_layout(heights = c(4, 1, 1))
 Fig1a
 
-ggsave("paper_graphs/Fig1a.pdf", Fig1a, width = 6, height = 8)
+ggsave("paper_graphs/Fig1a.pdf", Fig1a, width = 6, height = 6)
