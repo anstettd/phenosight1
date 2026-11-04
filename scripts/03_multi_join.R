@@ -20,7 +20,7 @@ library(ggh4x)
 #Import Data
 
 #Multispectral Data
-PS2_early <- read_csv("data/Experiment01_EarlyPS2_Mimulus.csv") %>% filter(TOE>100)
+PS2_early <- read_csv("data/Experiment01_EarlyPS2_Mimulus.csv") %>% filter(TOE>140)
 PS2_late <- read_csv("data/Experiment01_LatePS2_Mimulus.csv")
 
 #Table that gives the pop/year info
