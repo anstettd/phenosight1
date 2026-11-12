@@ -1,13 +1,19 @@
 ##################################################################################
-## Fig 2: Fv/Fm and Chlorophyll Index over time, with per-treatment
-## statistics (MMJ, Nov 2026) — same construction as panel A of
+## Supplemental Fig S2: Fv/Fm and Chlorophyll Index over time, with
+## per-treatment statistics (MMJ, Nov 2026) — same construction as panel A of
 ## 1.1_Fig1_PSA_GR_MMJ.R, and the same style as 1_PSA_gr.R
 ##
-##  A  Fv/Fm over time, maternal-line means, one line per SWHC regime, with a
-##     -log10(P) row directly beneath each row of curves: each regime vs 100% SWHC
+##  A  Fv/Fm over time, one line per SWHC regime, with a -log10(P) row directly
+##     beneath each row of curves: each regime vs 100% SWHC
 ##  B  the same for Chlorophyll Index
 ##
-## Runs off the line-mean table written by 0_data_setup.R: data/PS2_all.csv
+## Written twice, once per replication unit:
+##   _lineMeans  the replicate is the maternal line   (data/PS2_all.csv)
+##   _plants     the replicate is the individual plant (data/PS2_all_plants.csv)
+## Same figure and same statistics, different n. See the header of
+## 1.1_Fig1_PSA_GR_MMJ.R for why both are in the supplement.
+##
+## Both tables are written by 0_data_setup.R.
 ###################################################################################
 #Import libraries
 library(tidyverse)
@@ -20,12 +26,23 @@ library(patchwork)
 RUN_BREAK <- (408 + 411) / 2
 REF <- "100%"
 
-#Import Data
-PS2_all <- read_csv("data/PS2_all.csv") %>%
-  mutate(Treatment = factor(Treatment, levels = c("20%", "40%", "60%", "80%", "100%")),
-         Timepoint = factor(Timepoint, levels = c("Early", "Late")),
-         Year = factor(Year, levels = c(2010, 2014)),      # 2010 on top row
-         Site = factor(Site, levels = c("Oregon", "California")))   # Oregon on left
+OUT_DIR <- "paper_graphs/Supplemental/magda"
+dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
+
+UNITS <- list(
+  list(tag = "lineMeans", ps2 = "data/PS2_all.csv",
+       label = "Replicate = maternal line (3 lines per group; 2 for Oregon 2014)"),
+  list(tag = "plants",    ps2 = "data/PS2_all_plants.csv",
+       label = "Replicate = individual plant (3-5 plants per line per regime)")
+)
+
+read_unit <- function(path) {
+  read_csv(path, show_col_types = FALSE) %>%
+    mutate(Treatment = factor(Treatment, levels = c("20%", "40%", "60%", "80%", "100%")),
+           Timepoint = factor(Timepoint, levels = c("Early", "Late")),
+           Year = factor(Year, levels = c(2010, 2014)),      # 2010 on top row
+           Site = factor(Site, levels = c("Oregon", "California")))   # Oregon on left
+}
 
 ############################################################################################################
 #Shared theme, kept identical to 1.1_Fig1_PSA_GR_MMJ.R so the two figures match.
@@ -62,16 +79,18 @@ fig_theme <- theme_bw() + theme(
 )
 
 ############################################################################################################
-#Builds one Figure-1A style block for a given trait: curves per watering regime in
+#Builds one Figure-S1A style block for a given trait: curves per watering regime in
 #a Year x Site grid, with a thin -log10(P) row directly beneath each row of curves,
 #all in ONE facet grid so each P panel sits under the curves it belongs to.
 #
-#  trait  column name in PS2_all, e.g. "Fv.Fm"
+#  trait  column name in the input table, e.g. "Fv.Fm"
 #  label  strip text, e.g. "Fv/Fm"
 #
 #Returns a list: $plot (the ggplot) and $stats (per-timepoint Tukey table).
 
 trait_block <- function(dat, trait, label) {
+
+  if (!trait %in% names(dat)) stop("column not found in the input table: ", trait)
 
   summ <- dat %>%
     group_by(Site, Year, Treatment, TOE) %>%
@@ -162,25 +181,41 @@ trait_block <- function(dat, trait, label) {
 }
 
 ############################################################################################################
-# Fig 2A — Fv/Fm      Fig 2B — Chlorophyll Index
+# S2A — Fv/Fm      S2B — Chlorophyll Index
 
-A <- trait_block(PS2_all, "Fv.Fm",  "Fv/Fm (a.u.)")
-B <- trait_block(PS2_all, "ChlIdx", "Chlorophyll Index (a.u.)")
+build_fig2 <- function(u) {
 
-write_csv(A$stats, "data/Fig2A_FvFm_vs100_pvalues.csv")
-write_csv(B$stats, "data/Fig2B_ChlIdx_vs100_pvalues.csv")
+  PS2 <- read_unit(u$ps2)
 
-#How many timepoints reach P < 0.05 for each regime, as a quick sanity check
-cat("\nFv/Fm: timepoints with Tukey P < 0.05 vs 100% SWHC\n")
-print(A$stats %>% filter(P < 0.05) %>% count(Site, Year, Treatment))
-cat("\nChlIdx: timepoints with Tukey P < 0.05 vs 100% SWHC\n")
-print(B$stats %>% filter(P < 0.05) %>% count(Site, Year, Treatment))
+  cat("\n================ ", u$tag, " ================\n", sep = "")
+  cat("PS2 rows:", nrow(PS2), "\n")
 
-Fig2 <- A$plot / B$plot +
-  plot_layout(heights = c(1, 1)) +
-  plot_annotation(tag_levels = list(c("A", "B"))) &
-  theme(plot.tag = element_text(size = 18, face = "bold"))
+  A <- trait_block(PS2, "Fv.Fm",  "Fv/Fm (a.u.)")
+  B <- trait_block(PS2, "ChlIdx", "Chlorophyll Index (a.u.)")
 
-#NB: do not print Fig2 after this. Under Rscript a bare `Fig2` opens the default
-#device and dumps a second, 7x7 in copy as Rplots.pdf in the project root.
-ggsave("paper_graphs/Figure 2.pdf", Fig2, width = 13.5, height = 17)
+  write_csv(A$stats, paste0("data/FigS2A_FvFm_vs100_pvalues_", u$tag, ".csv"))
+  write_csv(B$stats, paste0("data/FigS2B_ChlIdx_vs100_pvalues_", u$tag, ".csv"))
+
+  #How many timepoints reach P < 0.05 for each regime, as a quick sanity check
+  cat("\nFv/Fm: timepoints with Tukey P < 0.05 vs 100% SWHC\n")
+  print(A$stats %>% filter(P < 0.05) %>% count(Site, Year, Treatment))
+  cat("\nChlIdx: timepoints with Tukey P < 0.05 vs 100% SWHC\n")
+  print(B$stats %>% filter(P < 0.05) %>% count(Site, Year, Treatment))
+
+  Fig2 <- A$plot / B$plot +
+    plot_layout(heights = c(1, 1)) +
+    plot_annotation(title = u$label,
+                    tag_levels = list(c("A", "B"))) &
+    theme(plot.tag = element_text(size = 18, face = "bold"))
+
+  out <- file.path(OUT_DIR, paste0("FigS2_FvFm_ChlIdx_", u$tag, ".pdf"))
+
+  #NB: do not print Fig2 after this. Under Rscript a bare `Fig2` opens the default
+  #device and dumps a second, 7x7 in copy as Rplots.pdf in the project root.
+  ggsave(out, Fig2, width = 13.5, height = 17)
+  cat("wrote", out, "\n")
+
+  invisible(NULL)
+}
+
+for (u in UNITS) build_fig2(u)

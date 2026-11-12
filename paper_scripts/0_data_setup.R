@@ -50,6 +50,15 @@ PS2_all <- bind_rows(PS2_early3, PS2_late3) %>%
 
 write_csv(PS2_all, "data/PS2_all.csv")
 
+#The same thing at PLANT level, for the versions of each figure that use the
+#individual plant as the replicate rather than the maternal line (MMJ, Nov 2026).
+#These are exactly the rows that feed PS2_early3 / PS2_late3 above, not averaged.
+PS2_all_plants <- bind_rows(PS2_early2 %>% mutate(Timepoint = "Early"),
+                            PS2_late2  %>% mutate(Timepoint = "Late")) %>%
+  mutate(Timepoint = factor(Timepoint, levels = c("Early", "Late")))
+
+write_csv(PS2_all_plants, "data/PS2_all_plants.csv")
+
 ############################################################################################################
 #Growth Rate Setup
 #
@@ -85,6 +94,14 @@ gr_per_plant <- function(df, toe_min = TOE_MIN) {
 
 GR_early <- gr_per_plant(PS2_early2)
 GR_late  <- gr_per_plant(PS2_late2)
+
+#Keep the per-plant slopes as well, for the plant-level figures (MMJ, Nov 2026).
+#One row per plant that passed the R2 > 0.7 / GR > 0 filter.
+GR_all_plants <- bind_rows(GR_early %>% mutate(Timepoint = "Early"),
+                           GR_late  %>% mutate(Timepoint = "Late")) %>%
+  mutate(Timepoint = factor(Timepoint, levels = c("Early", "Late")))
+
+write_csv(GR_all_plants, "data/GR_all_plants.csv")
 
 #Make a data frame that has line(pop) means
 GR_early3 <- GR_early %>%

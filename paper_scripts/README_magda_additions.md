@@ -1,13 +1,20 @@
 # Additions from Magda — November 2026
 
-Two sets of things: the **paper figures** (`1.1`, `2.2`, `4.1`, with a legend file
-each) and the **earlier exploratory scripts** (`4`–`7`, with the PDFs under
-`paper_graphs/magda/`). All paths are relative to the repository root, so run them
-from the project root (or with the `.Rproj` open).
+Dan's figures are the **main** figures for 1, 2 and 3. The one main figure here is
+the tree-ring, **Figure 4** (`4.1`), which lives in `paper_graphs/` with the other
+main figures. The rest is **supplemental**: `1.1` and `2.2` under
+`paper_graphs/Supplemental/magda/`, plus the **earlier exploratory scripts**
+(`4`–`7`, with the PDFs under `paper_graphs/magda/`). All paths are relative to
+the repository root, so run them from the project root (or with the `.Rproj`
+open).
 
-Read the paper scripts first — `4`–`7` are kept because they cover traits and
-maternal lines that the paper figures do not, but where the two overlap the paper
-versions supersede them (see "How the paper scripts differ" below).
+Read `1.1`, `2.2` and `4.1` first — `4`–`7` are kept because they cover traits and
+maternal lines those three do not, but where the two overlap the newer versions
+supersede them (see "How the newer scripts differ" below).
+
+**Every supplemental figure is written twice**, at two replication levels — see
+"Two replication levels" below. Run order is `0_data_setup.R` first, then any of
+`1.1`, `2.2`, `4.1` in any order.
 
 ## Change to `0_data_setup.R`
 
@@ -22,6 +29,11 @@ Dan — the growth-rate block is now filled in, as you asked in the comment ther
   `PS2_late2` (plant level), not `PS2_early3` / `PS2_late3`.
 - It writes `data/GR_early3.csv`, `data/GR_late3.csv` and a combined `data/GR_all.csv`.
 - It also renames `Roi.Mask` to `PSA`, so that is the column name downstream.
+- Two further tables are written for the plant-level figures, and nothing else
+  uses them: `data/PS2_all_plants.csv` (the rows that feed `PS2_early3` /
+  `PS2_late3`, not averaged) and `data/GR_all_plants.csv` (the per-plant slopes
+  before they are averaged into line means). Both additions are additive — your
+  existing outputs are unchanged.
 
 Note this changes the numbers slightly from `Experiment01_*Growth_Mimulus.csv`:
 those used `TOE > 120`, and only for Early — the Late frame starts at 411 h, so the
@@ -36,22 +48,40 @@ most of the apparent 100%-contrast signal came from those first few points. With
 `TOE_MIN <- 140` the first grid point kept is 144 h, so every series starts at its
 own minimum.
 
-## The paper figures
+## The figures
 
-Everything in these three scripts is fitted on **maternal-line means**, never on
-individual plants — 15 points per group per timepoint (5 regimes × 3 lines), 10 for
-Oregon 2014, which has only 2 lines. Each writes its statistics to `data/` as CSV
-and its figure to `paper_graphs/`, and each has a companion `*_legend.txt` in
-`paper_graphs/` with the draft legend, the full n accounting, what every graphical
-element means, and the caveats worth keeping in the text.
+Each script writes its statistics to `data/` as CSV. Each `*_legend.txt` holds the
+draft legend, the full n accounting, what every graphical element means, and the
+caveats worth keeping in the text.
 
-| Script | Figure | Legend file |
-|---|---|---|
-| `1.1_Fig1_PSA_GR_MMJ.R` | `Figure 1.pdf` — (A) PSA over time per watering regime with a −log10(P) row under each row of curves, (B) growth rate for the early and late intervals with ANOVA P and Tukey letters, (C) GR regressed on % SWHC per group and interval. | `Fig1_PSA_GR_SWHC_legend.txt` |
-| `2.2_Fig2_FvFm_ChlIdx_MMJ.R` | `Figure 2.pdf` — the same construction as Fig 1A for (A) Fv/Fm and (B) Chlorophyll Index. | `Fig2_FvFm_ChlIdx_legend.txt` |
-| `4.1_Fig4_Regression_TreeRing_MMJ.R` | `Figure 4.pdf` — (A) NDVI regressed on % SWHC at 144 h for all four groups, (B) the tree-ring: that regression repeated at every timepoint and for every trait. | `Fig4_Regression_TreeRing_legend.txt` |
+| Script | Figures | Where | Legend file |
+|---|---|---|---|
+| `4.1_Fig4_Regression_TreeRing_MMJ.R` | `Figure4_TreeRing_{lineMeans,plants}.pdf` — the tree-ring: `trait ~ SWHC` at every timepoint for all 14 traits, with the single-timepoint NDVI regression inset in each corner. | `paper_graphs/` (**main**) | `Figure4_TreeRing_legend.txt` |
+| `1.1_Fig1_PSA_GR_MMJ.R` | `FigS1_PSA_GR_{lineMeans,plants}.pdf` — (A) PSA over time per watering regime with a −log10(P) row under each row of curves, (B) growth rate for the early and late intervals with ANOVA P and Tukey letters, (C) GR regressed on % SWHC per group and interval. | `Supplemental/magda/` | `FigS1_PSA_GR_legend.txt` |
+| `2.2_Fig2_FvFm_ChlIdx_MMJ.R` | `FigS2_FvFm_ChlIdx_{lineMeans,plants}.pdf` — the same construction as S1A for (A) Fv/Fm and (B) Chlorophyll Index. | `Supplemental/magda/` | `FigS2_FvFm_ChlIdx_legend.txt` |
 
-Figure 3 is the Fv/Fm vs ChlIdx lag analysis and is yours — nothing here touches it.
+## Two replication levels
+
+Every figure here is written twice, and the two files differ in one thing only:
+what counts as a replicate.
+
+- `_lineMeans` — the **maternal line** is the replicate. 3 points per regime per
+  group (2 for Oregon 2014). Runs off `PS2_all.csv` / `GR_all.csv`.
+- `_plants` — the **individual plant** is the replicate, nothing pre-averaged.
+  9–15 points per regime per group. Runs off `PS2_all_plants.csv` /
+  `GR_all_plants.csv`.
+
+Same traits, same models, same panels, same code — only n changes. The title at
+the top of each page states which one it is.
+
+The line-level version is the conservative one and is what should carry any claim
+in the text: plants within a maternal line are siblings grown side by side, so
+they are not independent replicates of the line's response, and treating them as
+such inflates the degrees of freedom without adding information about the line.
+The plant-level version is here to show how much of the apparent signal is real
+structure and how much is the line-level design not having the power to resolve
+it. A contrast significant at plant level and absent at line level is a
+candidate, not a result.
 
 Statistics in Fig 1A and Fig 2: one-way ANOVA across the five regimes at each
 timepoint within each group, then Tukey HSD, plotting only the four contrasts
@@ -66,7 +96,7 @@ The run break at 409.5 h is drawn in every panel — a dashed vertical line in
 Figures 1 and 2, a dashed ring in the tree-ring. It is where the plants outgrew the
 imaging trays and the setup changed, so any step across it is technical.
 
-### How the paper scripts differ from `4`–`7`
+### How the newer scripts differ from `4`–`7`
 
 Three things changed, and all three matter if you compare the two sets of figures:
 
@@ -89,6 +119,14 @@ Three things changed, and all three matter if you compare the two sets of figure
    (408 → 411 h = 3 h), so left to itself it draws every tile a quarter of its
    proper size and the ring comes out as slivers separated by white. `4.1` sets the
    height to the modal spacing. `4` and `5` still have this.
+4. **Layout.** `4.1` is one panel, not two: the single-timepoint regression that
+   used to be a full-width panel A is now four small insets, each in the corner its
+   own quadrant points into. The insets are squares of `INSET_SIZE` × the ring
+   panel; 0.19 is the largest that geometrically cannot touch the ring, and the
+   derivation is in a comment at the top of the script. The quadrant names are set
+   along the arc, centred on each quadrant's own block of traits, and the cell each
+   inset comes from is outlined in red with a red radial pointer running out to it
+   from the centre.
 
 ## The earlier scripts
 
@@ -127,8 +165,9 @@ shrinks the residual. Fine for ranking traits; not for quoting.
 
 ## Provenance of the PDFs
 
-`Figure 1.pdf`, `Figure 2.pdf` and `Figure 4.pdf` are the ggplot output of the
-scripts above and will reproduce exactly.
+The two `Figure4_TreeRing_*.pdf` files in `paper_graphs/` and the four `FigS*.pdf`
+files under `paper_graphs/Supplemental/magda/` are the ggplot output of the scripts
+above and will reproduce exactly.
 
 The PDFs committed under `paper_graphs/magda/` were produced from the same analysis
 as scripts `4`–`7` but with a matplotlib implementation, so re-running those scripts
@@ -151,7 +190,7 @@ that resolution: line **H** is flat and much smaller than G and I, and in Califo
 what made that group look quiet when the lines were pooled.
 
 At line means, the four groups differ enormously in how much of the trait panel
-responds at all: in Figure 4B, 902 of 2912 trait × group × timepoint regressions
+responds at all: in Figure 4, 902 of 2912 trait × group × timepoint regressions
 pass FDR < 0.05, but California 2014 accounts for 465 of them (13 of 14 traits)
 against 88 for Oregon 2010 (4 traits). Part of the Oregon 2014 shortfall is power —
 2 lines, so 10 points per regression rather than 15.
