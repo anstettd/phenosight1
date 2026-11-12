@@ -1,16 +1,16 @@
 # Additions from Magda — November 2026
 
-Dan's figures are the **main** figures for 1, 2 and 3. The one main figure here is
-the tree-ring, **Figure 4** (`4.1`), which lives in `paper_graphs/` with the other
-main figures. The rest is **supplemental**: `1.1` and `2.2` under
-`paper_graphs/Supplemental/magda/`, plus the **earlier exploratory scripts**
-(`4`–`7`, with the PDFs under `paper_graphs/magda/`). All paths are relative to
-the repository root, so run them from the project root (or with the `.Rproj`
-open).
+Dan's figures are the **main** figures for 1, 2 and 3. The main figures here are
+the tree-ring **Figure 4** (`4.1`) and the two contrast half-rings **Figures 5
+and 6** (`4.2`), all in `paper_graphs/` with the other main figures. The rest is
+**supplemental**: `1.1` and `2.2` under `paper_graphs/Supplemental/magda/`, plus
+the **earlier exploratory scripts** (`4`–`7`, with the PDFs under
+`paper_graphs/magda/`). All paths are relative to the repository root, so run
+them from the project root (or with the `.Rproj` open).
 
-Read `1.1`, `2.2` and `4.1` first — `4`–`7` are kept because they cover traits and
-maternal lines those three do not, but where the two overlap the newer versions
-supersede them (see "How the newer scripts differ" below).
+Read `1.1`, `2.2`, `4.1` and `4.2` first — `4`–`7` are kept because they cover
+traits and maternal lines those four do not, but where the two overlap the newer
+versions supersede them (see "How the newer scripts differ" below).
 
 **Every supplemental figure is written twice**, at two replication levels — see
 "Two replication levels" below. Run order is `0_data_setup.R` first, then any of
@@ -59,6 +59,61 @@ caveats worth keeping in the text.
 | `4.1_Fig4_Regression_TreeRing_MMJ.R` | `Figure4_TreeRing_{lineMeans,plants}.pdf` — the tree-ring: `trait ~ SWHC` at every timepoint for all 14 traits, with the single-timepoint NDVI regression inset in each corner. | `paper_graphs/` (**main**) | `Figure4_TreeRing_legend.txt` |
 | `1.1_Fig1_PSA_GR_MMJ.R` | `FigS1_PSA_GR_{lineMeans,plants}.pdf` — (A) PSA over time per watering regime with a −log10(P) row under each row of curves, (B) growth rate for the early and late intervals with ANOVA P and Tukey letters, (C) GR regressed on % SWHC per group and interval. | `Supplemental/magda/` | `FigS1_PSA_GR_legend.txt` |
 | `2.2_Fig2_FvFm_ChlIdx_MMJ.R` | `FigS2_FvFm_ChlIdx_{lineMeans,plants}.pdf` — the same construction as S1A for (A) Fv/Fm and (B) Chlorophyll Index. | `Supplemental/magda/` | `FigS2_FvFm_ChlIdx_legend.txt` |
+| `4.2_Fig5_6_Contrast_TreeRing_MMJ.R` | `Figure5_*` and `Figure6_*` — eight figures in one run; see "The contrast figures" below. | `paper_graphs/` (**main**) | four files, one per figure × quantity |
+
+## The contrast figures (5 and 6)
+
+`4.2` is a derivative of Figure 4: same geometry and same reading, but each cell
+carries a **contrast between two collections** rather than a trait. It writes
+eight figures in one run — two contrasts × two quantities × two replication
+levels — and needs no editing to do so.
+
+**The contrast** decides what is compared and what the quadrants are. Both are
+HALF rings, one quadrant per level of the other factor:
+
+- **Figure 5**, by year: 2014 against 2010, within each site. Quadrants are
+  sites, California upper right and Oregon upper left, as in Figure 4.
+- **Figure 6**, by site: California against Oregon, within each collection year.
+  Quadrants are years, 2014 upper right and 2010 upper left, so the older
+  collection reads on the left.
+
+**The quantity** decides what fills a cell:
+
+- **`DeltaPlasticity`** — `(slope_comparison − slope_reference) / residual SD`.
+  `trait ~ SWHC` is fitted separately within each level — these are Figure 4's
+  regressions — and the slopes are subtracted, then divided by the residual SD of
+  the model holding both, which makes the number an effect size and so comparable
+  across traits with different units. The asterisks are the `C × SWHC`
+  interaction, so fill and asterisks test the same hypothesis.
+- **`EvolIndex`** (Figure 5) / **`LevelRatio`** (Figure 6) — an index
+  `mean(comparison) / mean(reference)` is formed per watering regime, regressed on
+  % SWHC, and the cell carries that slope. The asterisks are the main effect of
+  the contrast, which is *not* a test of what the colour shows; the interaction P
+  is in the CSV as `P_con_swhc` if you want it. Figure 6's is not called an
+  evolutionary index, because a between-site difference is divergence rather than
+  evolutionary change.
+
+Why both: the index is mostly a **level** shift and Δ plasticity a **plasticity**
+shift, and a population can evolve either without the other. Read radially too —
+radius is experimental time, so a wedge that is near-white at the centre and
+deepens outward is a difference that *builds* as the experiment runs, rather than
+one present from the first image.
+
+**What they show, briefly.** At maternal-line level **no cell** passes FDR < 0.05
+for the interaction, in either figure (0 of 1456) — the Δ plasticity panels carry
+no asterisks at all — while the level contrasts pass in 836 of 1456 cells for
+year and 1080 for site. Taken together: the collections differ in trait level, and
+there is no resolvable evidence that they differ in how they respond to water.
+Two cautions, both spelled out in the legends. The interaction test is far weaker
+than the main-effect test on the same rows, so a blank panel is not evidence of no
+change in plasticity. And the main-effect counts are optimistic, since those terms
+are fitted across 25–30 rows drawn from only five maternal lines — 57% and 74% of
+the panel "significant" is a reason for caution, not celebration. The one trait
+that breaks through is NDVI at plant level, consistently negative but absent at
+line level, so a candidate rather than a result.
+
+Every cell's numbers, both quantities and both P values, are in
+`data/Figure5_contrast_regressions_<unit>.csv` and the Figure 6 equivalent.
 
 ## Two replication levels
 
@@ -165,9 +220,10 @@ shrinks the residual. Fine for ranking traits; not for quoting.
 
 ## Provenance of the PDFs
 
-The two `Figure4_TreeRing_*.pdf` files in `paper_graphs/` and the four `FigS*.pdf`
-files under `paper_graphs/Supplemental/magda/` are the ggplot output of the scripts
-above and will reproduce exactly.
+The two `Figure4_TreeRing_*.pdf` and the eight `Figure5_*` / `Figure6_*` files in
+`paper_graphs/`, and the four `FigS*.pdf` under
+`paper_graphs/Supplemental/magda/`, are the ggplot output of the scripts above and
+will reproduce exactly.
 
 The PDFs committed under `paper_graphs/magda/` were produced from the same analysis
 as scripts `4`–`7` but with a matplotlib implementation, so re-running those scripts
