@@ -238,49 +238,53 @@ Fig1B <- ggplot(GR_all, aes(x = Treatment, y = GR, fill = Year)) +
 ############################################################################################################
 #Fig 1C - Growth rate regressed on % Soil Water-Holding Capacity within each Site x Year group, Early and Late
 
-# One group per Site x Year; California in reds, Oregon in blues
+# One group per Site x Year; color = Year (2010 skyblue3, 2014 #FF7700), a unique shape for each of the four groups,
+# and linetype = Site (California solid, Oregon dashed)
 grp_levels <- c("California 2014", "California 2010", "Oregon 2014", "Oregon 2010")
-grp_cols   <- c("California 2014" = "#B2182B", "California 2010" = "#EF6B4F",
-                "Oregon 2014"     = "#2166AC", "Oregon 2010"     = "#6BAED6")
-grp_shapes <- c("California 2014" = 17, "California 2010" = 16,
-                "Oregon 2014"     = 17, "Oregon 2010"     = 16)
-grp_lines  <- c("California 2014" = "dashed", "California 2010" = "solid",
-                "Oregon 2014"     = "dashed", "Oregon 2010"     = "solid")
+grp_cols   <- c("California 2014" = "#FF7700", "California 2010" = "skyblue3",
+                "Oregon 2014"     = "#FF7700", "Oregon 2010"     = "skyblue3")
+grp_shapes <- c("California 2014" = 17,   # filled triangle
+                "California 2010" = 16,   # filled circle
+                "Oregon 2014"     = 15,   # filled square
+                "Oregon 2010"     = 18)   # filled diamond
+grp_lines  <- c("California 2014" = "solid",  "California 2010" = "solid",
+                "Oregon 2014"     = "dashed", "Oregon 2010"     = "dashed")
 
 GR_C <- GR_all %>%
   mutate(grp = factor(paste(Site, Year), levels = grp_levels))
 
 gr_head <- max(GR_C$GR, na.rm = TRUE) * 1.45
 
-# Regression of growth rate on % SWHC for each Site x Year group within each Timepoint
-gr_fits <- GR_C %>%
-  group_by(Site, Year, Timepoint, grp) %>%
-  group_modify(function(d, key) {
-    m <- lm(GR ~ SWHC, data = d)
-    s <- summary(m)
-    tibble(slope = coef(m)[2], R2 = s$r.squared, P = s$coefficients[2, 4], n = nrow(d))
-  }) %>%
-  ungroup()
+# Text size shared by BOTH legends (points legend in the theme, line legend in geom_text)
+legend_txt_pt <- 15   # >>> legend text size in pt, used by both legends; adjust here <<<
 
-# One coloured text line per group, stacked in legend order, top left of each panel
-fit_lab <- gr_fits %>%
-  mutate(lab = paste0("R2 = ", formatC(R2, format = "f", digits = 2),
-                      "   P = ", formatC(P, format = "g", digits = 2)),
-         y   = gr_head * (0.975 - 0.06 * (as.integer(grp) - 1)))
+# Line legend, hand-drawn in the white space of the Early (left) panel only
+# (a ggplot legend cannot be placed in a single facet panel, so it is built from data, as in Fig 1B)
+ln_leg <- tibble(grp       = factor(grp_levels, levels = grp_levels),
+                 Timepoint = factor("Early", levels = levels(GR_all$Timepoint)),
+                 y         = gr_head * (0.955 - 0.085 * (seq_along(grp_levels) - 1)))  # >>> row spacing: edit 0.085 <<<
+ln_x0 <- 21; ln_x1 <- 33; ln_txt <- 35    # >>> line start, line end, text start (x units, % SWHC); adjust here <<<
 
-Fig1C <- ggplot(GR_C, aes(x = SWHC, y = GR, color = grp, shape = grp, linetype = grp)) +
+# Points legend (ggplot legend, top right of the Late panel): the four shapes in their year colors
+pt_guide <- guide_legend(ncol = 1, override.aes = list(size = 4.2, linetype = 0))
+
+Fig1C <- ggplot(GR_C, aes(x = SWHC, y = GR, color = grp, shape = grp)) +
   geom_point(size = 2.8, alpha = 0.7) +
-  geom_smooth(method = "lm", se = FALSE, formula = y ~ x, linewidth = 0.8) +
-  geom_text(data = fit_lab, aes(x = 18, y = y, label = lab, color = grp),
-            inherit.aes = FALSE, hjust = 0, vjust = 1, size = 4.2, fontface = "bold",
-            show.legend = FALSE) +
+  geom_smooth(aes(linetype = grp), method = "lm", se = FALSE, formula = y ~ x, linewidth = 0.8,
+              show.legend = FALSE) +
+  # hand-drawn line legend (Early panel only): line in the group's line type and color, then the group name
+  geom_segment(data = ln_leg, aes(x = ln_x0, xend = ln_x1, y = y, yend = y, color = grp, linetype = grp),
+               linewidth = 1.1, inherit.aes = FALSE, show.legend = FALSE) +
+  geom_text(data = ln_leg, aes(x = ln_txt, y = y, label = grp),
+            size = legend_txt_pt / .pt, fontface = "bold", hjust = 0, vjust = 0.5,
+            color = "black", inherit.aes = FALSE) +
   facet_wrap(~ Timepoint) +
   scale_color_manual(values = grp_cols,   breaks = grp_levels, name = NULL) +
   scale_shape_manual(values = grp_shapes, breaks = grp_levels, name = NULL) +
   scale_linetype_manual(values = grp_lines, breaks = grp_levels, name = NULL) +
   scale_x_continuous(breaks = c(20, 40, 60, 80, 100)) +
   scale_y_continuous(breaks = c(0, 5, 10, 15, 20)) +
-  guides(color = guide_legend(ncol = 1, override.aes = list(size = 4.2, linewidth = 1.1))) +
+  guides(color = pt_guide, shape = pt_guide, linetype = "none") +
   coord_cartesian(ylim = c(0, gr_head)) +
   labs(x = "% Soil Water-Holding Capacity", y = "Growth Rate", tag = "C") +
   fig_theme + tick_theme_BC +
@@ -288,9 +292,8 @@ Fig1C <- ggplot(GR_C, aes(x = SWHC, y = GR, color = grp, shape = grp, linetype =
         legend.position.inside = c(0.99, 0.97),   # top right of the Late panel; adjust x/y here
         legend.justification = c(1, 1),
         legend.background = element_rect(fill = "white", color = NA),
-        legend.text = element_text(size = 15, face = "bold"),
+        legend.text = element_text(size = legend_txt_pt, face = "bold", color = "black"),
         legend.key.size = unit(1.5, "lines"),
-        legend.key.width = unit(2.4, "lines"),
         legend.spacing.y = unit(2, "pt"))
 
 col_BC <- (Fig1B / Fig1C) + plot_layout(heights = c(1.7, 1.3))
