@@ -59,17 +59,18 @@ fig_theme <- theme_bw() + theme(
   plot.margin = margin(t = 0, r = 5, b = 0, l = 5)
 )
 
-# Same Site x Year groups and styling as Fig 1C: California in reds, Oregon in blues
+# Colour = Year (2010 skyblue3, 2014 orange) for BOTH sites
+# Linetype = Site (California solid, Oregon dashed)
 grp_levels <- c("California 2014", "California 2010", "Oregon 2014", "Oregon 2010")
-grp_cols   <- c("California 2014" = "#B2182B", "California 2010" = "#EF6B4F",
-                "Oregon 2014"     = "#2166AC", "Oregon 2010"     = "#6BAED6")
-grp_lines  <- c("California 2014" = "dashed", "California 2010" = "solid",
-                "Oregon 2014"     = "dashed", "Oregon 2010"     = "solid")
+grp_cols   <- c("California 2014" = "#FF7700", "California 2010" = "skyblue3",
+                "Oregon 2014"     = "#FF7700", "Oregon 2010"     = "skyblue3")
+grp_lines  <- c("California 2014" = "solid",  "California 2010" = "solid",
+                "Oregon 2014"     = "dashed", "Oregon 2010"     = "dashed")
 
 # ---- Plot function --------------------------------------------------------
 # Columns = % WHC treatment; Oregon and California share each panel (4 lines: Site x Year)
-# early = TRUE -> no x-axis title, no legend, tag A (top row)
-# early = FALSE -> x-axis title, vertical legend inside bottom right, tag B (bottom row)
+# early = TRUE -> no x-axis title, no legend, tag "A Early" (top row)
+# early = FALSE -> x-axis title, vertical legend inside bottom right, tag "B Late" (bottom row)
 make_xy <- function(data, xvar, xlab, early = FALSE) {
   d <- data %>%
     filter(!is.na(.data[[xvar]]), !is.na(Fv.Fm)) %>%
@@ -86,10 +87,10 @@ make_xy <- function(data, xvar, xlab, early = FALSE) {
     fig_theme
   
   if (early) {
-    p <- p + labs(x = NULL, y = "Fv/Fm", tag = "A") +
+    p <- p + labs(x = NULL, y = "Fv/Fm", tag = "A Early") +
       theme(legend.position = "none")
   } else {
-    p <- p + labs(x = xlab, y = "Fv/Fm", tag = "B") +
+    p <- p + labs(x = xlab, y = "Fv/Fm", tag = "B Late") +
       theme(legend.position = "inside",
             legend.position.inside = c(0.99, 0.02),   # bottom right; adjust x/y here
             legend.justification.inside = c(1, 0),
@@ -116,5 +117,5 @@ Fig_ari
 # ---- Save -----------------------------------------------------------------
 dir.create("paper_graphs/z_Extra", showWarnings = FALSE, recursive = TRUE)
 
-ggsave("paper_graphs/fvfm_chlidx_early_late.pdf",        plot = Fig_chl, width = 14, height = 6.5, units = "in")
+ggsave("paper_graphs/Fig3_fvfm_chlidx_early_late.pdf",        plot = Fig_chl, width = 14, height = 6.5, units = "in")
 ggsave("paper_graphs/z_Extra/fvfm_aridx_early_late.pdf", plot = Fig_ari, width = 14, height = 6.5, units = "in")
